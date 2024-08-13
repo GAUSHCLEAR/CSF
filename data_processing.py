@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageFont
+from scipy.optimize import curve_fit
+
 
 def strip_image(target_size, contrast, T, angle, avg_value):
     # 计算初始图像大小
@@ -63,5 +65,57 @@ def generate_csf_image(size,T,contrast,angle,avg_value,text,blur_core,blur_radiu
     text_img = text_image(size, text, font_size=int(size*0.9),
         blur_core=blur_core, blur_radius=blur_radius)
     image = front_image*text_img+background_image*(1-text_img)
-    print(f"size: {size}, T: {T}, contrast: {contrast:.2f}, angle: {angle}")
+    # print(f"size: {size}, T: {T}, contrast: {contrast:.2f}, angle: {angle}")
     return image
+
+def calculate_T_in_pix(spatial_frequency,distance_in_meter,dpi):
+    mm_per_degree = 1000 * distance_in_meter * np.tan(2 * np.pi / 360)
+    T_in_mm = (1 / spatial_frequency) * mm_per_degree
+    T_in_pixel = T_in_mm * dpi / 25.4
+    return int(T_in_pixel)
+def calculate_size_in_pix(size_in_mm,dpi):
+    size_in_pixel = size_in_mm * dpi / 25.4
+    return int(size_in_pixel)
+
+def estimate_contrast_sensitivity(x_values, cs_values,x_low_bound=0,x_high_bound=10):
+    """
+    估计CS(x)=0.5时的x值。
+    
+    参数:
+    x_values: 输入的x值列表或数组
+    cs_values: 对应的CS值列表或数组
+    
+    返回:
+    estimated_x: CS(x)=0.5时估计的x值
+    """
+    
+    # 定义sigmoid函数
+    def sigmoid(x, L, x0, k):
+        return L / (1 + np.exp(-k*(x-x0)))
+    
+    # 将输入转换为numpy数组
+    x = np.array(x_values)
+    y = np.array(cs_values)
+    if len(x)<3 or len(y)<3:
+        # print("数据点太少，无法拟合。")
+        return None
+
+    # 初始参数猜测
+    p0 = [max(y), np.median(x), 1]
+    
+    try:
+        # 使用curve_fit进行拟合
+        popt, _ = curve_fit(sigmoid, x, y, p0, method='lm', maxfev=10000)
+    except:
+        # print("拟合失败，请检查输入数据。")
+        return None
+    
+    # 解析拟合参数
+    L, x0, k = popt
+    
+    # 计算CS(x)=0.5时的x值
+    estimated_x = x0 - np.log(L/0.5 - 1)/k
+    if np.isnan(estimated_x) or estimated_x < x_low_bound or estimated_x > x_high_bound:
+        # print('估计的x值超出范围。')
+        return None
+    return estimated_x
