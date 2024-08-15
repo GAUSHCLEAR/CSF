@@ -69,8 +69,11 @@ def generate_csf_image(size,T,contrast,angle,avg_value,text,blur_core,blur_radiu
     return image
 
 def calculate_T_in_pix(spatial_frequency,distance_in_meter,dpi):
-    mm_per_degree = 1000 * distance_in_meter * np.tan(2 * np.pi / 360)
-    T_in_mm = (1 / spatial_frequency) * mm_per_degree
+    # mm_per_degree = 1000 * distance_in_meter * np.tan(2 * np.pi / 360)
+    # T_in_mm = (1 / spatial_frequency) * mm_per_degree
+    # T_in_pixel = T_in_mm * dpi / 25.4
+    theta = np.deg2rad(1/spatial_frequency)
+    T_in_mm = 1000 * distance_in_meter * np.tan(theta)
     T_in_pixel = T_in_mm * dpi / 25.4
     return int(T_in_pixel)
 def calculate_size_in_pix(size_in_mm,dpi):

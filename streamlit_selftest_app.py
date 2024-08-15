@@ -63,18 +63,10 @@ with st.sidebar:
     contract_list = 10**(-logCS_list)
 
     st.markdown("## 6.开始测量")
-    st.markdown("请选择一个空间频率和对比度")
-    cols = st.columns([1]*len(T_list_in_cycle_per_deg))
-    for i in range(len(T_list_in_cycle_per_deg)):
-        cols[i].markdown(f'### {int(T_list_in_cycle_per_deg[i])} CPD')
-        for j in range(N_logCS):
-            cols[i].button(f'{logCS_list[j]:.2f}', key=f'{i}_{j}')
-            if st.session_state[f'{i}_{j}']:
-                st.session_state['chooseID']=(i,j)
+    start_measurement=st.button("开始测量")
 
-
-if 'chooseID' in st.session_state:
-    chooseID=st.session_state['chooseID']
+if start_measurement:
+    chooseID=np.random.randint(0,len(T_list_in_pix),2)
     text = '●'
     # T = T_list[chooseID]
     T = T_list_in_pix[chooseID[0]]
