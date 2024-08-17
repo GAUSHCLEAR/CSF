@@ -93,32 +93,33 @@ def estimate_contrast_sensitivity(x_values, cs_values,x_low_bound=0,x_high_bound
     """
     
     # 定义sigmoid函数
-    def sigmoid(x, L, x0, k):
-        return L / (1 + np.exp(-k*(x-x0)))
+    def sigmoid(x, x0, k):
+        return 1 / (1 + np.exp(-k*(x-x0)))
     
     # 将输入转换为numpy数组
     x = np.array(x_values)
     y = np.array(cs_values)
     if len(x)<3 or len(y)<3:
         # print("数据点太少，无法拟合。")
-        return None
+        return None,None 
 
     # 初始参数猜测
-    p0 = [max(y), np.median(x), 1]
+    p0 = [np.median(x), 1]
     
     try:
         # 使用curve_fit进行拟合
         popt, _ = curve_fit(sigmoid, x, y, p0, method='lm', maxfev=10000)
     except:
         # print("拟合失败，请检查输入数据。")
-        return None
+        return None,None 
     
     # 解析拟合参数
-    L, x0, k = popt
+    x0, k = popt
     
     # 计算CS(x)=0.5时的x值
-    estimated_x = x0 - np.log(L/0.5 - 1)/k
+    estimated_x = x0 - np.log(1/0.5 - 1)/k
+    CI = np.abs(np.log(1/0.05 -1)/k)
     if np.isnan(estimated_x) or estimated_x < x_low_bound or estimated_x > x_high_bound:
         # print('估计的x值超出范围。')
-        return None
-    return estimated_x
+        return None,None 
+    return estimated_x,CI 

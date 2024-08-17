@@ -57,7 +57,7 @@ with st.sidebar:
     # 设置对比度列表
     st.markdown("## 5.设置对比度")
     logCS_min = st.number_input('最小对比度（logCS）', min_value=0.0, max_value=2.0, value=1.0, step=0.1)
-    logCS_max = st.number_input('最大对比度（logCS）', min_value=0.0, max_value=3.0, value=2.0, step=0.1)
+    logCS_max = st.number_input('最大对比度（logCS）', min_value=0.0, max_value=2.5, value=2.4, step=0.1)
     N_logCS = st.number_input('对比度数量', min_value=1, max_value=20 , value=12, step=1)
     logCS_list=np.linspace(logCS_min,logCS_max,N_logCS)
     contract_list = 10**(-logCS_list)
@@ -72,8 +72,9 @@ with st.sidebar:
             if st.session_state[f'{i}_{j}']:
                 st.session_state['chooseID']=(i,j)
 
+    angle = np.random.randint(-90, 89) // 45 * 45
 
-if 'chooseID' in st.session_state:
+if 'chooseID' in st.session_state :
     chooseID=st.session_state['chooseID']
     text = '●'
     # T = T_list[chooseID]
@@ -84,7 +85,6 @@ if 'chooseID' in st.session_state:
     T_in_degree = T_list_in_cycle_per_deg[chooseID[0]]
     logCS = logCS_list[chooseID[1]]
 
-    angle = np.random.randint(-90, 89) // 45 * 45
     # st.markdown(f"空间频率：{T:.2f}, 对比度：{contrast:.2f}, 角度：{angle}°")
     
     csf_image = generate_csf_image(size, T, contrast, angle, avg_value, text, blur_core, blur_radius)
@@ -92,6 +92,7 @@ if 'chooseID' in st.session_state:
     fig, ax = plt.subplots(figsize=(csf_image.shape[1] / dpi, csf_image.shape[0] / dpi), dpi=dpi)
     ax.imshow(csf_image, cmap='gray', vmin=0, vmax=255)
     ax.axis('off')
+    # st.session_state['chooseID']=None
 
     # 保存图像到内存
     buf = io.BytesIO()
@@ -99,12 +100,16 @@ if 'chooseID' in st.session_state:
     buf.seek(0)
     image = Image.open(buf)
     image = image.resize((csf_image.shape[1], csf_image.shape[0]), Image.LANCZOS)
+    angle_to_str_dict={
+        0:'↕',45:'⤡',-45:'⤢',-90:'↔'}
 
     st.image(image, use_column_width=False) 
-    col1,col2,col3=st.columns([1,1,1])
+    col1,col2,col3,col4=st.columns([1,1,1,1])
     answer_right = col1.button('正确')
     answer_wrong = col2.button('错误')
-    answer_clear = col3.button('清空')
+    answer_answer= col3.markdown(angle_to_str_dict[angle])
+    answer_clear = col4.button('清空')
+
     if 'answer_vector' not in st.session_state:
         st.session_state['answer_vector'] = []
     if answer_right:
@@ -123,14 +128,15 @@ if 'chooseID' in st.session_state:
         for t in T_list_in_cycle_per_deg:
             t_x = [x[1] for x in st.session_state['answer_vector'] if x[0]==t]
             t_logCS = [x[2] for x in st.session_state['answer_vector'] if x[0]==t]
-            t_x_threshold = estimate_contrast_sensitivity(
+            t_x_threshold, CI  = estimate_contrast_sensitivity(
                 x_values=t_x,
                 cs_values=t_logCS,
                 x_low_bound=logCS_min,
                 x_high_bound=logCS_max)
             answer_dict[t]=t_x_threshold
             if t_x_threshold is not None:
-                answer_string+=f"|{t_x_threshold:.2f}"
+                answer_string+=f"|{t_x_threshold:.3f}±{CI:.3f}"
             else:
                 answer_string+="|"
         st.markdown(answer_string)
+        st.markdown(st.session_state['answer_vector'])
