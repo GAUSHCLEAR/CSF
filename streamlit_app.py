@@ -131,7 +131,7 @@ if 'parameters' in st.session_state:
         estimated_x, ci = estimate_contrast_sensitivity(x_values, y_values)
         x_values=st.session_state.parameters['logCS_list']
         y_values=[st.session_state[f'y_{T_idx}_{logCS_idx}'] for logCS_idx in range(len(x_values))]
-        x_values=np.append(x_values,[0,0.5,3])
+        x_values=np.append(x_values,[0,0.1,3])
         y_values=np.append(y_values,[1,1,0])
         estimated_x, ci = estimate_contrast_sensitivity(x_values, y_values)
         if estimated_x is not None:
