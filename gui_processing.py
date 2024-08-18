@@ -60,7 +60,7 @@ def set_spacial_frequency_gui(container,distance_in_meter,dpi):
     # 设置对比度列表
 def set_contrast_gui(container):
     container.markdown("## 5.设置对比度")
-    logCS_min = container.number_input('最小对比度（logCS）', min_value=0.0, max_value=2.0, value=1.0, step=0.1)
+    logCS_min = container.number_input('最小对比度（logCS）', min_value=0.0, max_value=2.0, value=0.0, step=0.1)
     logCS_max = container.number_input('最大对比度（logCS）', min_value=0.0, max_value=2.5, value=2.4, step=0.1)
     N_logCS = container.number_input('对比度数量', min_value=1, max_value=20 , value=12, step=1)
     logCS_list=np.linspace(logCS_min,logCS_max,N_logCS)
