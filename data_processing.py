@@ -36,6 +36,7 @@ def text_image(size, text, font_size,
 
     # 字符串和字体设置
     font_path = "NotoSansSC-ExtraBold.ttf"
+    # font_path = 'digital-7.ttf'
     font = ImageFont.truetype(font_path, font_size)
 
 
@@ -43,7 +44,7 @@ def text_image(size, text, font_size,
     draw = ImageDraw.Draw(image)
     
     x = size // 2
-    y = int(size // 2 )
+    y = int(size // 2 * 0.9)
 
     # 绘制文本
     draw.text((x, y), text, font=font, fill=255, anchor='mm')
@@ -62,7 +63,7 @@ def generate_csf_image(size,T,contrast,angle,avg_value,text,blur_core,blur_radiu
         T=T, 
         angle=angle, 
         avg_value=avg_value)
-    text_img = text_image(size, text, font_size=int(size*0.9),
+    text_img = text_image(size, text, font_size=int(size*0.95),
         blur_core=blur_core, blur_radius=blur_radius)
     image = front_image*text_img+background_image*(1-text_img)
     # print(f"size: {size}, T: {T}, contrast: {contrast:.2f}, angle: {angle}")

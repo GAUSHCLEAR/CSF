@@ -3,6 +3,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+import pandas as pd
 
 from data_processing import (
     generate_csf_image,
@@ -10,133 +11,140 @@ from data_processing import (
     calculate_T_in_pix,
     estimate_contrast_sensitivity
     )
+from gui_processing import (
+    set_dpi_gui,set_distance_gui,set_image_gui,
+    set_spacial_frequency_gui,
+    set_contrast_gui,
+    show_csf_image)
 
+text_choose_from = ['2', '3', '4', '6','9']
+angle_choose_from = [-60, -45, -30, 30, 45, 60]
 
-with st.sidebar:
-    st.markdown("## 1.标定DPI")
-    st.info('请使用直尺测量下方的蓝色测量线长度，然后输入实际长度。你可以调整像素数和蓝色测量线长度来标定屏幕实际的分辨率。')
-    px_num=st.number_input('像素数', min_value=100, max_value=500, value=130, step=1)
-    line_length=st.number_input('直尺测量线长度（mm）', min_value=1.0, max_value=100.0, value=50.0, step=0.1)
-    st.markdown("### ↓测量下面这根蓝线↓")
-    st.markdown(
-        f"""
-        <div style="width: {px_num}px; height: 10px; background-color: blue; margin: 10px 0;"></div>
-        """,
-        unsafe_allow_html=True
+st.set_page_config(page_title="视觉敏感度测试", page_icon="😵‍💫", layout="wide", initial_sidebar_state='expanded')
+
+setting_gui=st.container()
+
+if 'expand_state' not in st.session_state:
+    st.session_state['expand_state']=True
+
+with setting_gui.expander("设置参数", expanded=st.session_state['expand_state']):
+    with st.form(key="setting"):
+        setting_dpi = st.container()
+        setting_distance = st.container()
+        setting_image = st.container()
+        setting_spacial_frequency = st.container()
+        setting_contrast = st.container()
+        dpi = set_dpi_gui(setting_dpi)
+        distance_in_meter = set_distance_gui(setting_distance)
+        size,avg_value,blur_core,blur_radius=set_image_gui(setting_image,dpi)    
+        T_list_in_pix,T_list_in_cycle_per_deg=set_spacial_frequency_gui(setting_spacial_frequency,distance_in_meter,dpi)    
+        logCS_min,logCS_max,logCS_list,contract_list=set_contrast_gui(setting_contrast)
+        # text = '●'
+        
+        setting_done_submit = st.form_submit_button("开始测试")
+    if setting_done_submit:
+        st.session_state['expand_state']=False 
+
+        text_list=[[text_choose_from[np.random.randint(0, len(text_choose_from))] for i in range(len(T_list_in_pix))]
+                     for j in range(len(logCS_list))]
+        angle_list = [
+            [angle_choose_from[np.random.randint(0, len(angle_choose_from))]  for i in range(len(T_list_in_pix))]
+            for j in range(len(logCS_list))
+        ]
+             
+        st.session_state['parameters'] = {
+            'dpi': dpi,
+            'distance_in_meter': distance_in_meter,
+            'size': size,
+            'avg_value': avg_value,
+            'blur_core': blur_core,
+            'blur_radius': blur_radius,
+            'T_list_in_pix': T_list_in_pix,
+            'T_list_in_cycle_per_deg': T_list_in_cycle_per_deg,
+            'logCS_min': logCS_min,
+            'logCS_max': logCS_max,
+            'logCS_list': logCS_list,
+            'contract_list': contract_list,
+            'text_list': text_list,
+            'angle_list': angle_list
+            # 'text_list": str(np.random.randint(0, 10))
+        }
+        st.session_state['result'] = pd.DataFrame(
+            columns=['spacial_frequency', 'CSF(logCS)', 'std_err'])
+        
+
+if 'parameters' in st.session_state:
+    text_string_list=",".join(text_choose_from)
+    st.markdown(f"""
+                ## 请站到{st.session_state.parameters['distance_in_meter']:.2f}米远处       
+                ## 请输入图片中的数字
+                ## 可选（{text_string_list}）
+                ## 如果看不清输入0
+                ## 可以使用tab键切换至下一个输入框 """)
+    
+    for T_idx in range(len(st.session_state.parameters['T_list_in_pix'])):
+        for logCS_idx in range(len(st.session_state.parameters['logCS_list'])): 
+            T = st.session_state.parameters['T_list_in_pix'][T_idx]
+            T_in_degree = st.session_state.parameters['T_list_in_cycle_per_deg'][T_idx]
+            contrast = st.session_state.parameters['contract_list'][logCS_idx]
+            logCS=st.session_state.parameters['logCS_list'][logCS_idx]
+            angle = st.session_state.parameters['angle_list'][logCS_idx][T_idx]
+            text = st.session_state.parameters['text_list'][logCS_idx][T_idx]
+            
+            show_block= st.container(border=True)
+            col1, col2 = show_block.columns([4, 1])
+
+            show_csf_image(
+                size, dpi, T, contrast, angle, avg_value, text, blur_core, blur_radius,col1)
+            col2.markdown(f"* 空间频率：{T_in_degree:.2f} CPD \n* 对比度logCS：{logCS:.3f}")
+            answer_text=col2.text_input(
+                '输入答案', 
+                value='0',
+                max_chars=1,
+                key=f'{T_idx}_{logCS_idx}')
+            
+            st.session_state[f'y_{T_idx}_{logCS_idx}']=1 if (answer_text == text) else 0
+            answer_check=(st.session_state[f'y_{T_idx}_{logCS_idx}']==1)
+            answer_color='green' if answer_check else 'red'
+            answer_string='正确' if answer_check else '错误'
+            col2.markdown(f"结果： <font color='{answer_color}'>{answer_string}</font>",unsafe_allow_html=True)
+        x_values=st.session_state.parameters['logCS_list']
+        y_values=[st.session_state[f'y_{T_idx}_{logCS_idx}'] for logCS_idx in range(len(x_values))]
+        x_values=np.append(x_values,[0,0.1,3])
+        y_values=np.append(y_values,[1,1,0])
+        estimated_x, ci = estimate_contrast_sensitivity(x_values, y_values)
+        if estimated_x is not None:
+            result_str=f"空间频率：{T_in_degree:.2f} CPD, 对比敏感度logCS：{estimated_x:.3f} ± {ci:.3f}"
+        else:
+            result_str=f"空间频率：{T_in_degree:.2f} CPD, 对比敏感度logCS：无法计算"
+        st.markdown(result_str)
+    ## calculate the result
+    result_df=pd.DataFrame(
+            columns=['spacial_frequency', 'CSF(logCS)', 'std_err'])
+    for T_idx in range(len(st.session_state.parameters['T_list_in_pix'])):
+        T_in_degree = st.session_state.parameters['T_list_in_cycle_per_deg'][T_idx]
+
+        x_values=st.session_state.parameters['logCS_list']
+        y_values=[st.session_state[f'y_{T_idx}_{logCS_idx}'] for logCS_idx in range(len(x_values))]
+        x_values=np.array(x_values)
+        y_values=np.array(y_values)
+        estimated_x, ci = estimate_contrast_sensitivity(x_values, y_values)
+        x_values=st.session_state.parameters['logCS_list']
+        y_values=[st.session_state[f'y_{T_idx}_{logCS_idx}'] for logCS_idx in range(len(x_values))]
+        x_values=np.append(x_values,[0,0.5,3])
+        y_values=np.append(y_values,[1,1,0])
+        estimated_x, ci = estimate_contrast_sensitivity(x_values, y_values)
+        if estimated_x is not None:
+            result_df.loc[len(result_df)]=[
+                T_in_degree, estimated_x, ci]
+        else:
+            result_df.loc[len(result_df)]=[
+                T_in_degree, np.nan, np.nan]
+    st.markdown("## 结果")
+    st.dataframe(result_df)
+    st.download_button(
+        label="下载结果",
+        data=result_df.to_csv(index=False).encode(),
+        file_name="result.csv",
+        mime="text/csv",
     )
-    dpi = px_num / line_length * 25.4
-    st.markdown("## 2.设置测量位置")
-    distance_in_meter = st.number_input('距离（米）', min_value=0.1, max_value=10.0, value=5.0, step=0.1)  
-    
-    st.markdown("## 3.设置图像参数")
-    image_size = st.number_input('图像大小（mm）', min_value=100, max_value=1000, value=150, step=1)
-    size=calculate_size_in_pix(image_size, dpi)
-    avg_value = 127
-    blur_core=size//20*2+1
-    blur_radius = blur_core //2
-
-    st.markdown(f"图像大小：{size}x{size}像素, DPI: {dpi:.2f}, 距离：{distance_in_meter}米, blur_core: {blur_core}, blur_radius: {blur_radius}")
-
-    # 设置空间频率列表
-    st.markdown("## 4.设置空间频率")
-    st.markdown("注意过高的空间频率或者过近的测量距离可能导致图像无法显示。")
-    T_list_in_cycle_per_deg_text = st.text_input('空间频率（周期/度）', '3,6,12,18,24')
-    T_list_in_cycle_per_deg = [float(T) for T in T_list_in_cycle_per_deg_text.split(',')]
-    T_list_in_pix = [calculate_T_in_pix(T, distance_in_meter, dpi) for T in T_list_in_cycle_per_deg]
-    # st.write(T_list_in_pix)
-    # 选择出T_list_in_pix中>1的值，并提取T_list_in_cycle_per_deg中对应的值
-    T_list_in_pix = [T for T in T_list_in_pix if T>1]
-    
-    # 选择出 T_list_in_pix 中 > 1 的值，并提取 T_list_in_cycle_per_deg 中对应的值
-    filtered_T_list_in_pix = [T for T in T_list_in_pix if T > 1]
-    filtered_T_list_in_cycle_per_deg = [T_list_in_cycle_per_deg[i] for i in range(len(T_list_in_pix)) if T_list_in_pix[i] > 1]
-    T_list_in_pix=filtered_T_list_in_pix
-    T_list_in_cycle_per_deg=filtered_T_list_in_cycle_per_deg
-
-
-    # 设置对比度列表
-    st.markdown("## 5.设置对比度")
-    logCS_min = st.number_input('最小对比度（logCS）', min_value=0.0, max_value=2.0, value=1.0, step=0.1)
-    logCS_max = st.number_input('最大对比度（logCS）', min_value=0.0, max_value=2.5, value=2.4, step=0.1)
-    N_logCS = st.number_input('对比度数量', min_value=1, max_value=20 , value=12, step=1)
-    logCS_list=np.linspace(logCS_min,logCS_max,N_logCS)
-    contract_list = 10**(-logCS_list)
-
-    st.markdown("## 6.开始测量")
-    st.markdown("请选择一个空间频率和对比度")
-    cols = st.columns([1]*len(T_list_in_cycle_per_deg))
-    for i in range(len(T_list_in_cycle_per_deg)):
-        cols[i].markdown(f'### {int(T_list_in_cycle_per_deg[i])} CPD')
-        for j in range(N_logCS):
-            cols[i].button(f'{logCS_list[j]:.2f}', key=f'{i}_{j}')
-            if st.session_state[f'{i}_{j}']:
-                st.session_state['chooseID']=(i,j)
-
-    angle = np.random.randint(-90, 89) // 45 * 45
-
-if 'chooseID' in st.session_state :
-    chooseID=st.session_state['chooseID']
-    text = '●'
-    # T = T_list[chooseID]
-    T = T_list_in_pix[chooseID[0]]
-    # contrast = contract_list[chooseID]
-    contrast = contract_list[chooseID[1]]
-    # angle = angle_list[chooseID]
-    T_in_degree = T_list_in_cycle_per_deg[chooseID[0]]
-    logCS = logCS_list[chooseID[1]]
-
-    # st.markdown(f"空间频率：{T:.2f}, 对比度：{contrast:.2f}, 角度：{angle}°")
-    
-    csf_image = generate_csf_image(size, T, contrast, angle, avg_value, text, blur_core, blur_radius)
-
-    fig, ax = plt.subplots(figsize=(csf_image.shape[1] / dpi, csf_image.shape[0] / dpi), dpi=dpi)
-    ax.imshow(csf_image, cmap='gray', vmin=0, vmax=255)
-    ax.axis('off')
-    # st.session_state['chooseID']=None
-
-    # 保存图像到内存
-    buf = io.BytesIO()
-    fig.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
-    buf.seek(0)
-    image = Image.open(buf)
-    image = image.resize((csf_image.shape[1], csf_image.shape[0]), Image.LANCZOS)
-    angle_to_str_dict={
-        0:'↕',45:'⤡',-45:'⤢',-90:'↔'}
-
-    st.image(image, use_column_width=False) 
-    col1,col2,col3,col4=st.columns([1,1,1,1])
-    answer_right = col1.button('正确')
-    answer_wrong = col2.button('错误')
-    answer_answer= col3.markdown(angle_to_str_dict[angle])
-    answer_clear = col4.button('清空')
-
-    if 'answer_vector' not in st.session_state:
-        st.session_state['answer_vector'] = []
-    if answer_right:
-        answer_vec=[T_in_degree,logCS,1]
-        st.session_state['answer_vector'].append(answer_vec)
-    if answer_wrong:
-        answer_vec=[T_in_degree,logCS,0]
-        st.session_state['answer_vector'].append(answer_vec)
-    if answer_clear:
-        st.session_state['answer_vector'] = []
-    if len(st.session_state['answer_vector'])>0:
-        answer_dict={}
-        answer_string = "|".join(str(x) for x in T_list_in_cycle_per_deg)
-        answer_string = "|"+answer_string+"|"+'\n'
-        answer_string += "|---"*len(T_list_in_cycle_per_deg)+"|"+'\n'
-        for t in T_list_in_cycle_per_deg:
-            t_x = [x[1] for x in st.session_state['answer_vector'] if x[0]==t]
-            t_logCS = [x[2] for x in st.session_state['answer_vector'] if x[0]==t]
-            t_x_threshold, CI  = estimate_contrast_sensitivity(
-                x_values=t_x,
-                cs_values=t_logCS,
-                x_low_bound=logCS_min,
-                x_high_bound=logCS_max)
-            answer_dict[t]=t_x_threshold
-            if t_x_threshold is not None:
-                answer_string+=f"|{t_x_threshold:.3f}±{CI:.3f}"
-            else:
-                answer_string+="|"
-        st.markdown(answer_string)
-        st.markdown(st.session_state['answer_vector'])
