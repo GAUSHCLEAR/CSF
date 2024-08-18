@@ -52,6 +52,7 @@ def set_spacial_frequency_gui(container,distance_in_meter,dpi):
         # 选择出 T_list_in_pix 中 > 1 的值，并提取 T_list_in_cycle_per_deg 中对应的值
         filtered_T_list_in_pix = [T for T in T_list_in_pix if T > 1]
         filtered_T_list_in_cycle_per_deg = [T_list_in_cycle_per_deg[i] for i in range(len(T_list_in_pix)) if T_list_in_pix[i] > 1]
+        container.markdown(f"可用的空间频率：{filtered_T_list_in_cycle_per_deg} 周期/度")  
         T_list_in_pix=filtered_T_list_in_pix
         T_list_in_cycle_per_deg=filtered_T_list_in_cycle_per_deg
         return T_list_in_pix,T_list_in_cycle_per_deg
