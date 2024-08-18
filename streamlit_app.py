@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 import pandas as pd
+import time 
 
 from data_processing import (
     generate_csf_image,
@@ -142,9 +143,10 @@ if 'parameters' in st.session_state:
                 T_in_degree, np.nan, np.nan]
     st.markdown("## 结果")
     st.dataframe(result_df)
+    time_stamp = time.strftime("%Y%m%d-%H%M")
     st.download_button(
         label="下载结果",
         data=result_df.to_csv(index=False).encode(),
-        file_name="result.csv",
+        file_name=f"CSF_{time_stamp}.csv",
         mime="text/csv",
     )
