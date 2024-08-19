@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import pandas as pd
 import time 
+import warnings
+warnings.filterwarnings("ignore")
 
 from data_processing import (
     generate_csf_image,
