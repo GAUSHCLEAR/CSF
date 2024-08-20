@@ -67,8 +67,8 @@ def set_contrast_gui(container):
     contract_list = 10**(-logCS_list)
     return logCS_min,logCS_max,logCS_list,contract_list
 
-def show_csf_image(size, dpi,
-    T, contrast, angle, avg_value, text, blur_core, blur_radius,container):
+def prepare_csf_image(size, dpi,
+    T, contrast, angle, avg_value, text, blur_core, blur_radius):
     csf_image = generate_csf_image(size, T, contrast, angle, avg_value, text, blur_core, blur_radius)
 
 
@@ -82,5 +82,22 @@ def show_csf_image(size, dpi,
     buf.seek(0)
     image = Image.open(buf)
     image = image.resize((csf_image.shape[1], csf_image.shape[0]), Image.LANCZOS)
+    return image 
 
+def show_csf_image(size, dpi,
+    T, contrast, angle, avg_value, text, blur_core, blur_radius,container):
+    # csf_image = generate_csf_image(size, T, contrast, angle, avg_value, text, blur_core, blur_radius)
+
+
+    # fig, ax = plt.subplots(figsize=(csf_image.shape[1] / dpi, csf_image.shape[0] / dpi), dpi=dpi)
+    # ax.imshow(csf_image, cmap='gray', vmin=0, vmax=255)
+    # ax.axis('off')
+
+    # # 保存图像到内存
+    # buf = io.BytesIO()
+    # fig.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
+    # buf.seek(0)
+    # image = Image.open(buf)
+    # image = image.resize((csf_image.shape[1], csf_image.shape[0]), Image.LANCZOS)
+    image=prepare_csf_image(size, dpi, T, contrast, angle, avg_value, text, blur_core, blur_radius)
     container.image(image, use_column_width=False) 
