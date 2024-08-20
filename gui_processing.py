@@ -23,6 +23,7 @@ def set_dpi_gui(container):
         unsafe_allow_html=True
     )
     dpi = px_num / line_length * 25.4
+    container.markdown(f"* 此屏幕的分辨率：DPI={dpi:.2f}")
     return dpi
 
 def set_distance_gui(container):
@@ -33,6 +34,7 @@ def set_distance_gui(container):
 def set_image_gui(container,dpi):
     container.markdown("## 3.设置图像参数")
     image_size = container.number_input('图像大小（mm）', min_value=100, max_value=1000, value=150, step=1)
+    
     size=calculate_size_in_pix(image_size, dpi)
     avg_value = 127
     blur_core=size//20*2+1

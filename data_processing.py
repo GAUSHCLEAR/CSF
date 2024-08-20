@@ -81,7 +81,7 @@ def calculate_size_in_pix(size_in_mm,dpi):
     size_in_pixel = size_in_mm * dpi / 25.4
     return int(size_in_pixel)
 
-def estimate_contrast_sensitivity(x_values, cs_values,x_low_bound=0,x_high_bound=10):
+def estimate_contrast_sensitivity(x_values, cs_values,x_low_bound=-0.1,x_high_bound=10):
     """
     估计CS(x)=0.5时的x值。
     
@@ -101,8 +101,8 @@ def estimate_contrast_sensitivity(x_values, cs_values,x_low_bound=0,x_high_bound
     # x = np.array(x_values)
     # y = np.array(cs_values)
 
-    x=np.append(x_values,[-0.5,-0.1,2.5,2.6,2.7,2.8,2.9,3])
-    y=np.append(cs_values,[1,1,0,0,0,0,0,0])
+    x=np.append(x_values,[-0.5,-0.4,-0.3,-0.2,-0.1,0,2.5,2.6,2.7,2.8,2.9,3])
+    y=np.append(cs_values,[1,1,1,1,1,1, 0,0,0,0,0,0])
     if len(x)<3 or len(y)<3:
         # print("数据点太少，无法拟合。")
         return None,None 
