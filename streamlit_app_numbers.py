@@ -22,7 +22,7 @@ from gui_processing import (
     show_csf_image)
 
 text_choose_from = ['2', '3', '4', '6','9']
-angle_choose_from = [-90,-45, 0, 45]
+angle_choose_from = [-60, -45, -30, 30, 45, 60]
 
 st.set_page_config(page_title="视觉敏感度测试", page_icon="😵‍💫", layout="wide", initial_sidebar_state='expanded')
 
@@ -49,7 +49,7 @@ with setting_gui.expander("设置参数", expanded=st.session_state['expand_stat
     if setting_done_submit:
         st.session_state['expand_state']=False 
 
-        text_list=[['●' for i in range(len(T_list_in_pix))]
+        text_list=[[text_choose_from[np.random.randint(0, len(text_choose_from))] for i in range(len(T_list_in_pix))]
                      for j in range(len(logCS_list))]
         angle_list = [
             [angle_choose_from[np.random.randint(0, len(angle_choose_from))]  for i in range(len(T_list_in_pix))]
@@ -81,10 +81,10 @@ if 'parameters' in st.session_state:
     text_string_list=",".join(text_choose_from)
     st.markdown(f"""
                 ## 请站到{st.session_state.parameters['distance_in_meter']:.2f}米远处       
-                ## 请输入图片中的条纹的方向
-                ## 可选'↕','⤡','⤢','↔','●'
-                ## 如果看不清输入'●'
-                """)
+                ## 请输入图片中的数字
+                ## 可选（{text_string_list}）
+                ## 如果看不清输入0
+                ## 可以使用tab键切换至下一个输入框 """)
     
     for T_idx in range(len(st.session_state.parameters['T_list_in_pix'])):
         for logCS_idx in range(len(st.session_state.parameters['logCS_list'])): 
@@ -100,27 +100,19 @@ if 'parameters' in st.session_state:
 
             if f"csf_image_{T_idx}_{logCS_idx}" not in st.session_state:
                 st.session_state[f"csf_image_{T_idx}_{logCS_idx}"]=prepare_csf_image(size, dpi, T, contrast, angle, avg_value, text, blur_core, blur_radius)
-            col1.image(st.session_state[f"csf_image_{T_idx}_{logCS_idx}"], use_column_width=False, output_format='PNG')
+            col1.image(st.session_state[f"csf_image_{T_idx}_{logCS_idx}"], use_column_width=False)
             col2.markdown(f"* 空间频率：{T_in_degree:.2f} CPD \n* 对比度logCS：{logCS:.3f}")
-            # answer_text=col2.text_input(
-            #     '输入答案', 
-            #     value='0',
-            #     max_chars=1,
-            #     key=f'{T_idx}_{logCS_idx}')
-            angle_to_str_dict={0:'↕',45:'⤡',-45:'⤢',-90:'↔'}
-            answer_text=col2.radio(
-                '选择答案',
-                options=['↕','⤡','⤢','↔','●'],
-                index=4,
-                key=f'{T_idx}_{logCS_idx}'
-            )            
-            
-            st.session_state[f'y_{T_idx}_{logCS_idx}']=1 if (answer_text == angle_to_str_dict[angle]) else 0
+            answer_text=col2.text_input(
+                '输入答案', 
+                value='0',
+                max_chars=1,
+                key=f'{T_idx}_{logCS_idx}')
             
             
+            
+            
+            st.session_state[f'y_{T_idx}_{logCS_idx}']=1 if (answer_text == text) else 0
             answer_check=(st.session_state[f'y_{T_idx}_{logCS_idx}']==1)
-
-
             answer_color='green' if answer_check else 'red'
             answer_string='正确' if answer_check else '错误'
             col2.markdown(f"结果： <font color='{answer_color}'>{answer_string}</font>",unsafe_allow_html=True)
