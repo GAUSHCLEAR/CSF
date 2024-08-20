@@ -98,13 +98,34 @@ if 'parameters' in st.session_state:
             col1, col2 = show_block.columns([4, 1])
 
             show_csf_image(
-                size, dpi, T, contrast, angle, avg_value, text, blur_core, blur_radius,col1)
+                    size, dpi, T, contrast, angle, avg_value, text, blur_core, blur_radius,col1)
             col2.markdown(f"* 空间频率：{T_in_degree:.2f} CPD \n* 对比度logCS：{logCS:.3f}")
             answer_text=col2.text_input(
                 '输入答案', 
                 value='0',
                 max_chars=1,
                 key=f'{T_idx}_{logCS_idx}')
+            
+            # if f'{T_idx}_{logCS_idx}' not in st.session_state:
+            #         # st.session_state[f'y_{T_idx}_{logCS_idx}']=0
+            #     show_csf_image(
+            #         size, dpi, T, contrast, angle, avg_value, text, blur_core, blur_radius,col1)
+            #     col2.markdown(f"* 空间频率：{T_in_degree:.2f} CPD \n* 对比度logCS：{logCS:.3f}")
+            #     answer_text=col2.text_input(
+            #         '输入答案', 
+            #         value='0',
+            #         max_chars=1,
+            #         key=f'{T_idx}_{logCS_idx}')
+            # elif st.session_state[f'{T_idx}_{logCS_idx}'] == '0':
+            #     show_csf_image(
+            #         size, dpi, T, contrast, angle, avg_value, text, blur_core, blur_radius,col1)
+            #     answer_text=col2.text_input(
+            #         '输入答案', 
+            #         value='0',
+            #         max_chars=1,
+            #         key=f'{T_idx}_{logCS_idx}')
+            # else:
+            #     answer_text=st.session_state[f'{T_idx}_{logCS_idx}']
             
             st.session_state[f'y_{T_idx}_{logCS_idx}']=1 if (answer_text == text) else 0
             answer_check=(st.session_state[f'y_{T_idx}_{logCS_idx}']==1)
@@ -113,8 +134,8 @@ if 'parameters' in st.session_state:
             col2.markdown(f"结果： <font color='{answer_color}'>{answer_string}</font>",unsafe_allow_html=True)
         x_values=st.session_state.parameters['logCS_list']
         y_values=[st.session_state[f'y_{T_idx}_{logCS_idx}'] for logCS_idx in range(len(x_values))]
-        x_values=np.append(x_values,[0,0.1,3])
-        y_values=np.append(y_values,[1,1,0])
+        # x_values=np.append(x_values,[0,0.1,3])
+        # y_values=np.append(y_values,[1,1,0])
         estimated_x, ci = estimate_contrast_sensitivity(x_values, y_values)
         if estimated_x is not None:
             result_str=f"空间频率：{T_in_degree:.2f} CPD, 对比敏感度logCS：{estimated_x:.3f} ± {ci:.3f}"
@@ -122,8 +143,11 @@ if 'parameters' in st.session_state:
             result_str=f"空间频率：{T_in_degree:.2f} CPD, 对比敏感度logCS：无法计算"
         st.markdown(result_str)
     ## calculate the result
+    logCS_list_col=[f'{logCS:.2f}' for logCS in st.session_state.parameters['logCS_list']]
     result_df=pd.DataFrame(
-            columns=['spacial_frequency', 'CSF(logCS)', 'std_err'])
+            columns=['spacial_frequency', 'CSF(logCS)', 'std_err']+
+            logCS_list_col
+            )
     for T_idx in range(len(st.session_state.parameters['T_list_in_pix'])):
         T_in_degree = st.session_state.parameters['T_list_in_cycle_per_deg'][T_idx]
 
@@ -134,15 +158,15 @@ if 'parameters' in st.session_state:
         estimated_x, ci = estimate_contrast_sensitivity(x_values, y_values)
         x_values=st.session_state.parameters['logCS_list']
         y_values=[st.session_state[f'y_{T_idx}_{logCS_idx}'] for logCS_idx in range(len(x_values))]
-        x_values=np.append(x_values,[0,0.1,3])
-        y_values=np.append(y_values,[1,1,0])
+        # x_values=np.append(x_values,[0,0.1,3])
+        # y_values=np.append(y_values,[1,1,0])
         estimated_x, ci = estimate_contrast_sensitivity(x_values, y_values)
         if estimated_x is not None:
             result_df.loc[len(result_df)]=[
-                T_in_degree, estimated_x, ci]
+                T_in_degree, estimated_x, ci]+y_values
         else:
             result_df.loc[len(result_df)]=[
-                T_in_degree, np.nan, np.nan]
+                T_in_degree, np.nan, np.nan]+y_values
     st.markdown("## 结果")
     st.dataframe(result_df)
     time_stamp = time.strftime("%Y%m%d-%H%M")

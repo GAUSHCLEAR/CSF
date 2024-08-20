@@ -98,8 +98,11 @@ def estimate_contrast_sensitivity(x_values, cs_values,x_low_bound=0,x_high_bound
         return 1 / (1 + np.exp(-k*(x-x0)))
     
     # 将输入转换为numpy数组
-    x = np.array(x_values)
-    y = np.array(cs_values)
+    # x = np.array(x_values)
+    # y = np.array(cs_values)
+
+    x=np.append(x_values,[-0.5,-0.1,2.9,3])
+    y=np.append(cs_values,[1,1,0,0])
     if len(x)<3 or len(y)<3:
         # print("数据点太少，无法拟合。")
         return None,None 

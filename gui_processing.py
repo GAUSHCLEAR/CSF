@@ -42,7 +42,7 @@ def set_image_gui(container,dpi):
 def set_spacial_frequency_gui(container,distance_in_meter,dpi):
         container.markdown("## 4.设置空间频率")
         container.markdown("注意过高的空间频率或者过近的测量距离可能导致图像无法显示。")
-        T_list_in_cycle_per_deg_text = container.text_input('空间频率（周期/度）', '6,12,18,24')
+        T_list_in_cycle_per_deg_text = container.text_input('空间频率（周期/度）', '6,12,18,24,30')
         T_list_in_cycle_per_deg = [float(T) for T in T_list_in_cycle_per_deg_text.split(',')]
         T_list_in_pix = [calculate_T_in_pix(T, distance_in_meter, dpi) for T in T_list_in_cycle_per_deg]
         # st.write(T_list_in_pix)
