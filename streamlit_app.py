@@ -96,12 +96,12 @@ if 'parameters' in st.session_state:
             text = st.session_state.parameters['text_list'][logCS_idx][T_idx]
             
             show_block= st.container(border=True)
-            col1, col2 = show_block.columns([4, 1])
-
-            if f"csf_image_{T_idx}_{logCS_idx}" not in st.session_state:
+            col1, col_mid,col2 = show_block.columns([3, 1,1])
+            col_mid.markdown(f"* 空间频率：{T_in_degree:.2f} CPD \n* 对比度logCS：{logCS:.3f}")
+            re_draw_button = col_mid.button('重新绘图', key=f'redraw_{T_idx}_{logCS_idx}')
+            if f"csf_image_{T_idx}_{logCS_idx}" not in st.session_state or re_draw_button:
                 st.session_state[f"csf_image_{T_idx}_{logCS_idx}"]=prepare_csf_image(size, dpi, T, contrast, angle, avg_value, text, blur_core, blur_radius)
             col1.image(st.session_state[f"csf_image_{T_idx}_{logCS_idx}"], use_column_width=False, output_format='PNG')
-            col2.markdown(f"* 空间频率：{T_in_degree:.2f} CPD \n* 对比度logCS：{logCS:.3f}")
             # answer_text=col2.text_input(
             #     '输入答案', 
             #     value='0',
